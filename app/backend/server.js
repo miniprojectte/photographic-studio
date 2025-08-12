@@ -24,6 +24,10 @@ app.get('/', (req, res) => {
 });
 
 // Routes
+app.use('/api/auth', require('./routers/authRoutes'));
+app.use('/api/profile', require('./routers/profileRoutes'));
+app.use('/api/sessions', require('./routers/sessionRoutes'));
+app.use('/api/photos', require('./routers/photoRoutes'));
 app.use('/api/bookings', require('./routers/bookingRoutes'));
 
 // 404 Handler
