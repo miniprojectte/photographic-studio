@@ -27,7 +27,7 @@ export default function Home() {
       <section className="relative mx-auto max-w-7xl px-6 pt-8 pb-24 md:pb-32">
         <div className="relative grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div className="space-y-6">
-            <p className="uppercase tracking-widest text-white-500 text-xs">Creative Photographey</p>
+            <p className="uppercase tracking-widest text-white-500 text-xs">Creative Photography</p>
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
               PHOTOGRAPHY
               <br />
