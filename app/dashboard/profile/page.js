@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { profileAPI } from '../../utils/api';
 
 export default function Profile() {
   const [profile, setProfile] = useState({
@@ -21,13 +22,7 @@ export default function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/profile/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await profileAPI.getProfile();
       
       if (data.success) {
         setProfile(data.user);
@@ -54,23 +49,8 @@ export default function Profile() {
     setMessage({ type: '', text: '' });
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/profile/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(profile)
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setMessage({ type: 'success', text: 'Profile updated successfully' });
-      } else {
-        setMessage({ type: 'error', text: data.message });
-      }
+      const data = await profileAPI.updateProfile(profile);
+      setMessage({ type: 'success', text: 'Profile updated successfully' });
     } catch (error) {
       console.error('Error updating profile:', error);
       setMessage({ type: 'error', text: 'Failed to update profile' });

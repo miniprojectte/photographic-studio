@@ -46,6 +46,31 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Get user's bookings (protected) - alias for dashboard
+router.get('/user', protect, async (req, res) => {
+  try {
+    const bookings = await Booking.find({ 
+      $or: [
+        { user: req.user.id },
+        { email: req.user.email } // Also match by email for guest bookings
+      ]
+    })
+    .sort({ createdAt: -1 })
+    .limit(10);
+    
+    res.json({
+      success: true,
+      bookings
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user bookings',
+      error: error.message
+    });
+  }
+});
+
 // Get user's bookings (protected)
 router.get('/my-bookings', protect, async (req, res) => {
   try {

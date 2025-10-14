@@ -21,6 +21,26 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// Get user sessions (alias for dashboard)
+router.get('/user', protect, async (req, res) => {
+  try {
+    const sessions = await Session.find({ client: req.user.id })
+      .sort({ date: -1 }) // Most recent first
+      .limit(10); // Limit to 10 for dashboard
+    
+    res.json({
+      success: true,
+      sessions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user sessions',
+      error: error.message
+    });
+  }
+});
+
 // Create a new session
 router.post('/', protect, async (req, res) => {
   try {

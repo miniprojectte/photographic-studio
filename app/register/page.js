@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, ArrowLeft, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { authAPI } from '../utils/api';
 import {
   Select,
   SelectContent,
@@ -31,19 +32,7 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      const data = await authAPI.register(formData);
 
       // Show success message and redirect to login page
       alert('Registration successful! Please login to continue.');

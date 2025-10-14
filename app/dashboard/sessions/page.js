@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, User, Phone, Mail, MessageSquare, Plus, Filter, Search, Eye, Trash2 } from 'lucide-react';
+import { Calendar, Clock, User, Phone, Mail, MessageSquare, Plus, Filter, Search, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BookingForm from '@/components/BookingForm';
 
@@ -37,6 +37,7 @@ export default function Sessions() {
   });
 
   useEffect(() => {
+    // Check authentication
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.href = '/login';
@@ -77,6 +78,7 @@ export default function Sessions() {
       if (data.success) {
         let filteredBookings = data.data;
         
+        // Apply client-side search filter
         if (filters.search) {
           filteredBookings = filteredBookings.filter(booking =>
             booking.name.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -104,12 +106,12 @@ export default function Sessions() {
   const handleBookingCreated = (newBooking) => {
     setBookings(prev => [newBooking, ...prev]);
     setShowForm(false);
-    fetchBookings();
+    fetchBookings(); // Refresh the list to get updated pagination
   };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when filtering
   };
 
   const handlePageChange = (newPage) => {
@@ -147,13 +149,33 @@ export default function Sessions() {
       const data = await response.json();
       if (data.success) {
         setBookings(bookings.filter(booking => booking._id !== id));
-        alert('Booking cancelled successfully');
+        if (window.notify) {
+          window.notify.success('Booking cancelled successfully', {
+            title: 'Success'
+          });
+        } else {
+          alert('Booking cancelled successfully');
+        }
       } else {
-        alert(data.message || 'Failed to cancel booking');
+        const errorMessage = data.message || 'Failed to cancel booking';
+        if (window.notify) {
+          window.notify.error(errorMessage, {
+            title: 'Error'
+          });
+        } else {
+          alert(errorMessage);
+        }
       }
     } catch (error) {
       console.error('Error cancelling booking:', error);
-      alert('An error occurred while cancelling the booking');
+      const errorMessage = 'An error occurred while cancelling the booking';
+      if (window.notify) {
+        window.notify.error(errorMessage, {
+          title: 'Error'
+        });
+      } else {
+        alert(errorMessage);
+      }
     }
   };
 
@@ -174,6 +196,7 @@ export default function Sessions() {
         />
       ) : (
         <>
+          {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
@@ -187,8 +210,10 @@ export default function Sessions() {
             </motion.div>
           </div>
 
+          {/* Filters */}
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Search className="inline h-4 w-4 mr-1" />
@@ -203,6 +228,7 @@ export default function Sessions() {
                 />
               </div>
 
+              {/* Status Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Filter className="inline h-4 w-4 mr-1" />
@@ -221,6 +247,7 @@ export default function Sessions() {
                 </select>
               </div>
 
+              {/* Session Type Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Session Type
@@ -239,6 +266,7 @@ export default function Sessions() {
                 </select>
               </div>
 
+              {/* Reset Filters */}
               <div className="flex items-end">
                 <Button
                   variant="outline"
@@ -254,132 +282,96 @@ export default function Sessions() {
             </div>
           </div>
 
+          {/* Bookings List */}
           {bookings.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-lg shadow-md p-8 text-center"
-            >
-              <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-gray-900 mb-2">No bookings found</h3>
-              <p className="text-gray-600 mb-4">
-                {Object.values(filters).some(f => f) ? 
-                  "No bookings match your current filters." : 
-                  "You haven't made any bookings yet."
-                }
-              </p>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Booking
-              </Button>
-            </motion.div>
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No bookings found</p>
+              <p className="text-gray-400 mt-2">Create your first booking to get started</p>
+            </div>
           ) : (
-            <>
-              <div className="grid grid-cols-1 gap-6">
-                {bookings.map((booking, index) => (
-                  <motion.div
-                    key={booking._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
-                  >
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Calendar className="h-6 w-6 text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {sessionTypeLabels[booking.sessionType]}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {formatDate(booking.date)}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(booking.status)}
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0"
-                              title="View Details"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {booking.status !== 'cancelled' && booking.status !== 'completed' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(booking._id)}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                                title="Cancel Booking"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+            <div className="grid grid-cols-1 gap-6">
+              {bookings.map((booking) => (
+                <motion.div
+                  key={booking._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-lg shadow-md p-6"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {sessionTypeLabels[booking.sessionType]}
+                      </h3>
+                      <p className="text-gray-600 mt-1">{booking.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(booking.status)}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(booking._id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <User className="h-4 w-4 mr-2" />
-                          <span>{booking.name}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Mail className="h-4 w-4 mr-2" />
-                          <span>{booking.email}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Phone className="h-4 w-4 mr-2" />
-                          <span>{booking.phone}</span>
-                        </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center text-gray-600">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        <span>{formatDate(booking.date)}</span>
                       </div>
+                      <div className="flex items-center text-gray-600">
+                        <Clock className="h-4 w-4 mr-2" />
+                        <span>{new Date(booking.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <div className="flex items-center text-gray-600">
+                        <Phone className="h-4 w-4 mr-2" />
+                        <span>{booking.phone}</span>
+                      </div>
+                    </div>
 
-                      {booking.message && (
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-start text-sm">
-                            <MessageSquare className="h-4 w-4 mr-2 mt-0.5 text-gray-500" />
-                            <p className="text-gray-700">{booking.message}</p>
-                          </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center text-gray-600">
+                        <Mail className="h-4 w-4 mr-2" />
+                        <span>{booking.email}</span>
+                      </div>
+                      {booking.notes && (
+                        <div className="flex items-start text-gray-600">
+                          <MessageSquare className="h-4 w-4 mr-2 mt-1" />
+                          <span className="text-sm">{booking.notes}</span>
                         </div>
                       )}
                     </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {pagination.pages > 1 && (
-                <div className="mt-8 flex justify-center">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                      disabled={pagination.page === 1}
-                    >
-                      Previous
-                    </Button>
-                    
-                    <span className="px-3 py-1 text-sm text-gray-700">
-                      Page {pagination.page} of {pagination.pages}
-                    </span>
-                    
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page === pagination.pages}
-                    >
-                      Next
-                    </Button>
                   </div>
-                </div>
-              )}
-            </>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.pages > 1 && (
+            <div className="mt-6 flex justify-center items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+              >
+                Previous
+              </Button>
+              <span className="text-gray-600">
+                Page {pagination.page} of {pagination.pages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
+              >
+                Next
+              </Button>
+            </div>
           )}
         </>
       )}

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, User, Mail, Phone, MessageSquare, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { bookingsAPI } from '../utils/api';
 
 const sessionTypes = [
   { value: 'portrait', label: 'Portrait Session' },
@@ -83,17 +84,7 @@ export default function BookingForm({ onBookingCreated, onCancel }) {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
+      const data = await bookingsAPI.createBooking(formData);
       
       if (data.success) {
         // Reset form
