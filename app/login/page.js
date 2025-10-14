@@ -46,13 +46,16 @@ export default function Login() {
       // Save token and user data
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('userType', formData.userType);
       
-      // Redirect based on user type
-      if (formData.userType === 'admin') {
-        router.push('/dashboard'); // You can create an admin dashboard later
+      // Use the role from the server response, not the form selection
+      const userRole = data.user.role || 'user';
+      localStorage.setItem('userType', userRole);
+      
+      // Redirect based on actual user role from database
+      if (userRole === 'admin') {
+        router.push('/admin'); // Admin dashboard
       } else {
-        router.push('/dashboard');
+        router.push('/dashboard'); // User dashboard
       }
       
     } catch (error) {

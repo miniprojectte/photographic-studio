@@ -42,8 +42,12 @@ export default function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('userType');
     router.push('/login');
   };
+
+  const isAdmin = user?.role === 'admin';
+  const userType = localStorage.getItem('userType');
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -59,7 +63,10 @@ export default function Dashboard() {
               <h1 className="text-xl font-bold text-gray-800">Photography Studio</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {user?.name}</span>
+              <span className="text-gray-700">
+                Welcome, {user?.name}
+                {isAdmin && <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Admin</span>}
+              </span>
               <Button
                 onClick={handleLogout}
                 variant="ghost"
@@ -293,6 +300,18 @@ export default function Dashboard() {
             </div>
           </motion.div>
         </div>
+
+        {/* Admin Dashboard Link */}
+        {isAdmin && (
+          <div className="mt-8 text-center">
+            <Link href="/admin">
+              <Button className="bg-red-600 hover:bg-red-700">
+                <Shield className="h-4 w-4" />
+                Go to Admin Dashboard
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

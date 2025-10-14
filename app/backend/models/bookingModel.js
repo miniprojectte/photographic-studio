@@ -3,6 +3,11 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false // Allow bookings from non-registered users
+  },
   name: {
     type: String,
     required: [true, 'Name is required'],

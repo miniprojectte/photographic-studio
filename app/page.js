@@ -14,12 +14,12 @@ export default function Home() {
           </Link>
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm text-neutral-300 ">
-          <Link href="/dashboard" className="hover:text-white transition">About</Link>
+          <Link href="/dashboard" className="hover:text-white transition">Dashboard</Link>
+          <Link href="/admin" className="hover:text-white transition">Admin</Link>
           <Link href="/dashboard/gallery" className="hover:text-white transition">Gallery</Link>
-          <Link href="#services" className="hover:text-white transition">Services</Link>
           <Link href="/button-examples" className="hover:text-white transition">UI Components</Link>
           <Link href="/login-demo" className="hover:text-white transition">Login Demo</Link>
-          <Link href="/login" className="hover:text-white transition">Contact</Link>
+          <Link href="/login" className="hover:text-white transition">Login</Link>
         </nav>
         <Button asChild className="ml-6 bg-amber-600 hover:bg-amber-700">
           <Link href="/login">
