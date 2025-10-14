@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // Generate JWT
@@ -14,7 +15,7 @@ const generateToken = (id) => {
 // Register route
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, userType } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -33,7 +34,8 @@ router.post('/register', async (req, res) => {
     const user = new User({
       name: username,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role: userType || 'user' // Use userType from frontend, default to 'user'
     });
 
     await user.save();
@@ -44,7 +46,8 @@ router.post('/register', async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
 
@@ -99,7 +102,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       },
       token
     });
@@ -114,9 +118,46 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get all users (for testing)
-router.get('/users', async (req, res) => {
+// Get current user info (protected route)
+router.get('/me', protect, async (req, res) => {
   try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
+// Get all users (admin only)
+router.get('/users', protect, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin role required.'
+      });
+    }
+
     const users = await User.find({}, '-password'); // Exclude password from response
     res.json({
       success: true,

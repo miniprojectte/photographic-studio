@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { profileAPI } from '../../utils/api';
 
 export default function Profile() {
   const [profile, setProfile] = useState({
@@ -20,13 +22,7 @@ export default function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/profile/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await profileAPI.getProfile();
       
       if (data.success) {
         setProfile(data.user);
@@ -53,23 +49,8 @@ export default function Profile() {
     setMessage({ type: '', text: '' });
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/profile/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(profile)
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setMessage({ type: 'success', text: 'Profile updated successfully' });
-      } else {
-        setMessage({ type: 'error', text: data.message });
-      }
+      const data = await profileAPI.updateProfile(profile);
+      setMessage({ type: 'success', text: 'Profile updated successfully' });
     } catch (error) {
       console.error('Error updating profile:', error);
       setMessage({ type: 'error', text: 'Failed to update profile' });
@@ -162,18 +143,20 @@ export default function Profile() {
             </div>
           </div>
 
-          <motion.button
+          <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={saving}
-            className={`w-full flex items-center justify-center space-x-2 py-2 px-4 bg-blue-600 text-white rounded-lg font-medium shadow-md hover:bg-blue-700 transition-colors ${
-              saving ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
           >
-            <Save className="h-5 w-5" />
-            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-          </motion.button>
+            <Button
+              type="submit"
+              disabled={saving}
+              className="w-full"
+              size="lg"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </motion.div>
         </form>
       </div>
     </div>
