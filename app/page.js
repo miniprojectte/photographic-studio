@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import logo from '../public/image.png';
+import { Button } from '@/components/ui/button';
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 text-white">
@@ -16,12 +17,15 @@ export default function Home() {
           <Link href="/dashboard" className="hover:text-white transition">About</Link>
           <Link href="/dashboard/gallery" className="hover:text-white transition">Gallery</Link>
           <Link href="#services" className="hover:text-white transition">Services</Link>
-          <Link href="#blog" className="hover:text-white transition">Blog</Link>
+          <Link href="/button-examples" className="hover:text-white transition">UI Components</Link>
+          <Link href="/login-demo" className="hover:text-white transition">Login Demo</Link>
           <Link href="/login" className="hover:text-white transition">Contact</Link>
         </nav>
-        <Link href="/login" className="ml-6 inline-flex items-center rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold hover:bg-amber-700 transition">
-          LOGIN
-        </Link>
+        <Button asChild className="ml-6 bg-amber-600 hover:bg-amber-700">
+          <Link href="/login">
+            LOGIN
+          </Link>
+        </Button>
       </header>
 
       <section className="relative mx-auto max-w-7xl px-6 pt-8 pb-24 md:pb-32">
@@ -36,9 +40,11 @@ export default function Home() {
               TAKE A SHOT.
             </h1>
             <div>
-              <Link href="#portfolio" className="inline-flex items-center rounded-md bg-red-500 px-6 py-3 text-sm font-semibold hover:bg-red-400 transition">
-                WATCH PORTFOLIO
-              </Link>
+              <Button asChild size="lg" className="bg-red-500 hover:bg-red-400">
+                <Link href="#portfolio">
+                  WATCH PORTFOLIO
+                </Link>
+              </Button>
             </div>
           </div>
 

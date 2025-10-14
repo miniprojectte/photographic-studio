@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, Edit, Trash2, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Sessions() {
   const [sessions, setSessions] = useState([]);
@@ -108,15 +109,15 @@ export default function Sessions() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Photography Sessions</h1>
-        <motion.button
+        <motion.div
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => setShowForm(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg"
         >
-          <Plus className="h-5 w-5" />
-          <span>New Session</span>
-        </motion.button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4" />
+            New Session
+          </Button>
+        </motion.div>
       </div>
 
       {showForm && (
@@ -199,23 +200,20 @@ export default function Sessions() {
             </div>
 
             <div className="flex space-x-4">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-              >
-                Book Session
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg"
-              >
-                Cancel
-              </motion.button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button type="submit">
+                  Book Session
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowForm(false)}
+                >
+                  Cancel
+                </Button>
+              </motion.div>
             </div>
           </form>
         </div>
@@ -231,18 +229,22 @@ export default function Sessions() {
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-semibold">{session.sessionType}</h3>
               <div className="flex space-x-2">
-                <button
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
                   onClick={() => handleEdit(session._id)}
                   className="text-blue-600 hover:text-blue-700"
                 >
-                  <Edit className="h-5 w-5" />
-                </button>
-                <button
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
                   onClick={() => handleDelete(session._id)}
                   className="text-red-600 hover:text-red-700"
                 >
-                  <Trash2 className="h-5 w-5" />
-                </button>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 

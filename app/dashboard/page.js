@@ -18,6 +18,7 @@ import {
   CreditCard,
   Bell
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -59,13 +60,15 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">Welcome, {user?.name}</span>
-              <button
+              <Button
                 onClick={handleLogout}
-                className="flex items-center text-gray-700 hover:text-red-600 transition-colors"
+                variant="ghost"
+                size="sm"
+                className="text-gray-700 hover:text-red-600"
               >
-                <LogOut className="h-5 w-5 mr-1" />
+                <LogOut className="h-4 w-4" />
                 Logout
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -116,18 +119,18 @@ export default function Dashboard() {
           >
             <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
             <div className="space-y-3">
-              <button className="w-full flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+              <Button variant="ghost" className="w-full justify-start space-x-3">
                 <Calendar className="h-5 w-5 text-blue-600" />
                 <span>Book New Session</span>
-              </button>
-              <button className="w-full flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+              </Button>
+              <Button variant="ghost" className="w-full justify-start space-x-3">
                 <MessageCircle className="h-5 w-5 text-blue-600" />
                 <span>Message Studio</span>
-              </button>
-              <button className="w-full flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+              </Button>
+              <Button variant="ghost" className="w-full justify-start space-x-3">
                 <Image className="h-5 w-5 text-blue-600" />
                 <span>View Gallery</span>
-              </button>
+              </Button>
             </div>
           </motion.div>
 
@@ -231,37 +234,6 @@ export default function Dashboard() {
             <p className="text-sm text-gray-600 mt-4">Recent Uploads: 24 new photos</p>
           </motion.div>
 
-          {/* Payment Overview */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-lg shadow-md"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <CreditCard className="h-8 w-8 text-blue-600" />
-                <h2 className="text-xl font-semibold">Payments</h2>
-              </div>
-              <Link
-                href="/dashboard/payments"
-                className="text-blue-600 hover:text-blue-700"
-              >
-                View All
-              </Link>
-            </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium">Wedding Package</p>
-                  <p className="text-sm text-gray-600">Due: Aug 30, 2025</p>
-                </div>
-                <p className="font-medium text-green-600">$2,500</p>
-              </div>
-              <div className="h-2 bg-gray-200 rounded-full">
-                <div className="h-2 bg-green-500 rounded-full w-1/2"></div>
-              </div>
-              <p className="text-sm text-gray-600">50% paid</p>
-            </div>
-          </motion.div>
 
           {/* Communication Center */}
           <motion.div
@@ -310,12 +282,12 @@ export default function Dashboard() {
               <div className="space-y-4">
                 <h3 className="font-medium text-gray-700">Quick Actions</h3>
                 <div className="space-y-2">
-                  <button className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  <Button className="w-full">
                     Send Message
-                  </button>
-                  <button className="w-full p-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                  </Button>
+                  <Button variant="outline" className="w-full">
                     Schedule Call
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Profile() {
   const [profile, setProfile] = useState({
@@ -162,18 +163,20 @@ export default function Profile() {
             </div>
           </div>
 
-          <motion.button
+          <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={saving}
-            className={`w-full flex items-center justify-center space-x-2 py-2 px-4 bg-blue-600 text-white rounded-lg font-medium shadow-md hover:bg-blue-700 transition-colors ${
-              saving ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
           >
-            <Save className="h-5 w-5" />
-            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-          </motion.button>
+            <Button
+              type="submit"
+              disabled={saving}
+              className="w-full"
+              size="lg"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </motion.div>
         </form>
       </div>
     </div>

@@ -3,13 +3,22 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft, UserCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function Login() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    userType: 'user' // default to user
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,9 +46,14 @@ export default function Login() {
       // Save token and user data
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userType', formData.userType);
       
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Redirect based on user type
+      if (formData.userType === 'admin') {
+        router.push('/dashboard'); // You can create an admin dashboard later
+      } else {
+        router.push('/dashboard');
+      }
       
     } catch (error) {
       console.error('Login error:', error);
@@ -54,6 +68,13 @@ export default function Login() {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleUserTypeChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      userType: value
     }));
   };
 
@@ -120,34 +141,57 @@ export default function Login() {
                 </div>
               </div>
 
+              <div className="relative">
+                <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
+                  Login as
+                </label>
+                <div className="relative">
+                  <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10" />
+                  <Select value={formData.userType} onValueChange={handleUserTypeChange}>
+                    <SelectTrigger className="pl-10 w-full">
+                      <SelectValue placeholder="Select user type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               {error && (
                 <div className="text-red-500 text-sm mt-2 text-center">
                   {error}
                 </div>
               )}
 
-              <motion.button
+              <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-6"
               >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    Sign In
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </motion.button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      </svg>
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </motion.div>
 
               <div className="mt-4 text-center">
                 <Link

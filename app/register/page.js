@@ -3,14 +3,23 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ArrowLeft, UserCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function Register() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    username: ''
+    username: '',
+    userType: 'user' // default to user
   });
 
   const [error, setError] = useState('');
@@ -53,6 +62,13 @@ export default function Register() {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleUserTypeChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      userType: value
     }));
   };
 
@@ -134,6 +150,24 @@ export default function Register() {
               </div>
             </div>
 
+            <div className="relative">
+              <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
+                Account Type
+              </label>
+              <div className="relative">
+                <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10" />
+                <Select value={formData.userType} onValueChange={handleUserTypeChange}>
+                  <SelectTrigger className="pl-10 w-full">
+                    <SelectValue placeholder="Select account type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
               <div className="flex">
@@ -149,16 +183,21 @@ export default function Register() {
             </div>
           )}
           
-          <motion.button
+          <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 mt-6 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className="mt-6"
             >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
-              {!isLoading && <ArrowRight className="h-4 w-4" />}
-            </motion.button>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full"
+                size="lg"
+              >
+                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {!isLoading && <ArrowRight className="h-4 w-4" />}
+              </Button>
+            </motion.div>
 
             <div className="mt-4 text-center">
               <Link
