@@ -187,6 +187,7 @@ router.get('/stats', protect, async (req, res) => {
       Booking.countDocuments({ status: 'pending' }),
       Booking.countDocuments({ status: 'confirmed' }),
       Booking.countDocuments({ status: 'completed' }),
+      Booking.countDocuments({ status: 'cancelled' }),
       User.countDocuments(),
       User.countDocuments({ role: 'admin' })
     ]);
@@ -198,8 +199,9 @@ router.get('/stats', protect, async (req, res) => {
         pendingBookings: stats[1],
         confirmedBookings: stats[2],
         completedBookings: stats[3],
-        totalUsers: stats[4],
-        totalAdmins: stats[5]
+        cancelledBookings: stats[4],
+        totalUsers: stats[5],
+        totalAdmins: stats[6]
       }
     });
   } catch (error) {

@@ -1,91 +1,143 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, Edit, Trash2, Plus } from 'lucide-react';
+import { Calendar, User, Phone, Mail, MessageSquare, Plus, Filter, Search, Eye, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import BookingForm from '@/components/BookingForm';
+
+const statusColors = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  confirmed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+  completed: 'bg-blue-100 text-blue-800'
+};
+
+const sessionTypeLabels = {
+  portrait: 'Portrait Session',
+  wedding: 'Wedding Photography',
+  family: 'Family Photos',
+  event: 'Event Photography',
+  commercial: 'Commercial Shoot'
+};
 
 export default function Sessions() {
-  const [sessions, setSessions] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
+  const [filters, setFilters] = useState({
+    status: '',
     sessionType: '',
-    date: '',
-    location: {
-      address: '',
-      city: '',
-      state: '',
-      zipCode: ''
-    },
-    price: '',
-    notes: ''
+    search: ''
+  });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0
   });
 
   useEffect(() => {
-    fetchSessions();
-  }, []);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
+    fetchBookings();
+  }, [filters, pagination.page]);
 
-  const fetchSessions = async () => {
+  const fetchBookings = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/sessions', {
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      const queryParams = new URLSearchParams({
+        page: pagination.page,
+        limit: pagination.limit,
+        ...(filters.status && { status: filters.status }),
+        ...(filters.sessionType && { sessionType: filters.sessionType })
+      });
+
+      const response = await fetch(`http://localhost:5000/api/bookings/my-bookings?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return;
+      }
+      
       const data = await response.json();
       if (data.success) {
-        setSessions(data.sessions);
+        let filteredBookings = data.data;
+        
+        if (filters.search) {
+          filteredBookings = filteredBookings.filter(booking =>
+            booking.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+            booking.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+            booking.sessionType.toLowerCase().includes(filters.search.toLowerCase())
+          );
+        }
+        
+        setBookings(filteredBookings);
+        if (data.pagination) {
+          setPagination(prev => ({
+            ...prev,
+            total: data.pagination.total,
+            pages: data.pagination.pages
+          }));
+        }
       }
     } catch (error) {
-      console.error('Error fetching sessions:', error);
+      console.error('Error fetching bookings:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
+  const handleBookingCreated = (newBooking) => {
+    setBookings(prev => [newBooking, ...prev]);
+    setShowForm(false);
+    fetchBookings();
+  };
 
-      const data = await response.json();
-      if (data.success) {
-        setSessions([...sessions, data.session]);
-        setShowForm(false);
-        setFormData({
-          sessionType: '',
-          date: '',
-          location: {
-            address: '',
-            city: '',
-            state: '',
-            zipCode: ''
-          },
-          price: '',
-          notes: ''
-        });
-      }
-    } catch (error) {
-      console.error('Error creating session:', error);
-    }
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const getStatusBadge = (status) => {
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this session?')) return;
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/sessions/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -94,184 +146,243 @@ export default function Sessions() {
 
       const data = await response.json();
       if (data.success) {
-        setSessions(sessions.filter(session => session._id !== id));
+        setBookings(bookings.filter(booking => booking._id !== id));
+        alert('Booking cancelled successfully');
+      } else {
+        alert(data.message || 'Failed to cancel booking');
       }
     } catch (error) {
-      console.error('Error deleting session:', error);
+      console.error('Error cancelling booking:', error);
+      alert('An error occurred while cancelling the booking');
     }
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Photography Sessions</h1>
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="h-4 w-4" />
-            New Session
-          </Button>
-        </motion.div>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {showForm ? (
+        <BookingForm 
+          onBookingCreated={handleBookingCreated}
+          onCancel={() => setShowForm(false)}
+        />
+      ) : (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
+              <p className="text-gray-600 mt-1">Manage your photography session bookings</p>
+            </div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New Booking
+              </Button>
+            </motion.div>
+          </div>
 
-      {showForm && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Book New Session</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Session Type
+                  <Search className="inline h-4 w-4 mr-1" />
+                  Search
+                </label>
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => handleFilterChange('search', e.target.value)}
+                  placeholder="Search by name, email..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Filter className="inline h-4 w-4 mr-1" />
+                  Status
                 </label>
                 <select
-                  value={formData.sessionType}
-                  onChange={(e) => setFormData({...formData, sessionType: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select Type</option>
-                  <option value="Wedding">Wedding</option>
-                  <option value="Portrait">Portrait</option>
-                  <option value="Family">Family</option>
-                  <option value="Event">Event</option>
-                  <option value="Commercial">Commercial</option>
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date & Time
+                  Session Type
                 </label>
-                <input
-                  type="datetime-local"
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
+                <select
+                  value={filters.sessionType}
+                  onChange={(e) => handleFilterChange('sessionType', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Types</option>
+                  <option value="portrait">Portrait</option>
+                  <option value="wedding">Wedding</option>
+                  <option value="family">Family</option>
+                  <option value="event">Event</option>
+                  <option value="commercial">Commercial</option>
+                </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  value={formData.location.address}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    location: { ...formData.location, address: e.target.value }
-                  })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-
-            <div className="flex space-x-4">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button type="submit">
-                  Book Session
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <div className="flex items-end">
                 <Button
-                  type="button"
                   variant="outline"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setFilters({ status: '', sessionType: '', search: '' });
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                  }}
+                  className="w-full"
                 >
-                  Cancel
-                </Button>
-              </motion.div>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sessions.map(session => (
-          <motion.div
-            key={session._id}
-            whileHover={{ scale: 1.02 }}
-            className="bg-white rounded-lg shadow-md p-6"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold">{session.sessionType}</h3>
-              <div className="flex space-x-2">
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => handleEdit(session._id)}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={() => handleDelete(session._id)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
+                  Reset Filters
                 </Button>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center text-gray-600">
-                <Calendar className="h-4 w-4 mr-2" />
-                <span>{new Date(session.date).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Clock className="h-4 w-4 mr-2" />
-                <span>{new Date(session.date).toLocaleTimeString()}</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <MapPin className="h-4 w-4 mr-2" />
-                <span>{session.location.address}</span>
-              </div>
-            </div>
+          {bookings.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-lg shadow-md p-8 text-center"
+            >
+              <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-gray-900 mb-2">No bookings found</h3>
+              <p className="text-gray-600 mb-4">
+                {Object.values(filters).some(f => f) ? 
+                  "No bookings match your current filters." : 
+                  "You haven't made any bookings yet."
+                }
+              </p>
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Booking
+              </Button>
+            </motion.div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-6">
+                {bookings.map((booking, index) => (
+                  <motion.div
+                    key={booking._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+                  >
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {sessionTypeLabels[booking.sessionType]}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {formatDate(booking.date)}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(booking.status)}
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              title="View Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDelete(booking._id)}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                title="Cancel Booking"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-lg font-semibold">${session.price}</p>
-              {session.notes && (
-                <p className="text-gray-600 text-sm mt-2">{session.notes}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <User className="h-4 w-4 mr-2" />
+                          <span>{booking.name}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Mail className="h-4 w-4 mr-2" />
+                          <span>{booking.email}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Phone className="h-4 w-4 mr-2" />
+                          <span>{booking.phone}</span>
+                        </div>
+                      </div>
+
+                      {booking.message && (
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-start text-sm">
+                            <MessageSquare className="h-4 w-4 mr-2 mt-0.5 text-gray-500" />
+                            <p className="text-gray-700">{booking.message}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {pagination.pages > 1 && (
+                <div className="mt-8 flex justify-center">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page === 1}
+                    >
+                      Previous
+                    </Button>
+                    
+                    <span className="px-3 py-1 text-sm text-gray-700">
+                      Page {pagination.page} of {pagination.pages}
+                    </span>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page === pagination.pages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
               )}
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
