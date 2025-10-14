@@ -19,7 +19,8 @@ import {
   Phone,
   Plus,
   Download,
-  RefreshCw
+  RefreshCw,
+  Camera
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -273,6 +274,68 @@ export default function AdminBookings() {
         });
       } else {
         alert(errorMessage);
+      }
+    }
+  };
+
+  const convertBookingToSession = async (bookingId) => {
+    if (!confirm('Convert this booking to a session? This will confirm the booking and create a new session.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Prompt for price and location
+      const price = prompt('Enter session price (USD):', '500');
+      if (price === null) return; // User cancelled
+      
+      const response = await fetch(`http://localhost:5000/api/sessions/admin/from-booking/${bookingId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          price: parseFloat(price) || 0,
+          location: {
+            address: '',
+            city: '',
+            state: '',
+            zipCode: ''
+          }
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadBookings();
+        loadStats();
+        if (window.notify) {
+          window.notify.success('Booking converted to session successfully', {
+            title: 'Session Created'
+          });
+        } else {
+          alert('Booking converted to session successfully');
+        }
+      } else {
+        const errorMessage = Array.isArray(data.error) ? data.error.join(', ') : (data.message || 'Failed to convert booking');
+        if (window.notify) {
+          window.notify.error(errorMessage, {
+            title: 'Conversion Failed'
+          });
+        } else {
+          alert(errorMessage);
+        }
+      }
+    } catch (error) {
+      console.error('Error converting booking to session:', error);
+      if (window.notify) {
+        window.notify.error('An error occurred while converting the booking', {
+          title: 'Conversion Failed'
+        });
+      } else {
+        alert('An error occurred while converting the booking');
       }
     }
   };
@@ -605,23 +668,48 @@ export default function AdminBookings() {
                       <div className="flex items-center space-x-2">
                         {/* Status Update Buttons */}
                         {booking.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateBookingStatus(booking._id, 'confirmed')}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            Confirm
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => updateBookingStatus(booking._id, 'confirmed')}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              Confirm
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => convertBookingToSession(booking._id)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              title="Convert booking to session"
+                            >
+                              <Camera className="h-3 w-3 mr-1" />
+                              Session
+                            </Button>
+                          </>
                         )}
                         
                         {(booking.status === 'confirmed' || booking.status === 'pending') && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateBookingStatus(booking._id, 'completed')}
-                          >
-                            Complete
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateBookingStatus(booking._id, 'completed')}
+                            >
+                              Complete
+                            </Button>
+                            {booking.status === 'confirmed' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => convertBookingToSession(booking._id)}
+                                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                                title="Convert confirmed booking to session"
+                              >
+                                <Camera className="h-3 w-3 mr-1" />
+                                Session
+                              </Button>
+                            )}
+                          </>
                         )}
                         
                         {booking.status !== 'cancelled' && booking.status !== 'completed' && (

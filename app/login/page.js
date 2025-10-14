@@ -3,22 +3,14 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, ArrowLeft, UserCheck } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 export default function Login() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    userType: 'user' // default to user
+    password: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -71,13 +63,6 @@ export default function Login() {
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }));
-  };
-
-  const handleUserTypeChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      userType: value
     }));
   };
 
@@ -141,24 +126,6 @@ export default function Login() {
                     className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     placeholder="Enter your password"
                   />
-                </div>
-              </div>
-
-              <div className="relative">
-                <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
-                  Login as
-                </label>
-                <div className="relative">
-                  <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10" />
-                  <Select value={formData.userType} onValueChange={handleUserTypeChange}>
-                    <SelectTrigger className="pl-10 w-full">
-                      <SelectValue placeholder="Select user type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

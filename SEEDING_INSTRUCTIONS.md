@@ -59,6 +59,5 @@ The frontend login and register forms now send `userType` which maps to the `rol
 3. Use the login form with:
    - Email: admin@admin.com
    - Password: admin123
-   - User Type: Admin
 
-The admin user will be created in the database with proper security (hashed password) and can be used immediately for testing admin functionality.
+The admin user will be created in the database with proper security (hashed password) and can be used immediately for testing admin functionality. The login form will automatically detect the user's role from the database.
