@@ -81,7 +81,17 @@ router.post('/login', async (req, res) => {
     }
     
     // Login successful
-    const token = generateToken(user._id);
+    let token;
+    try {
+      token = generateToken(user._id);
+    } catch (jwtError) {
+      console.error('JWT Generation Error:', jwtError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error generating authentication token',
+        error: 'JWT_ERROR'
+      });
+    }
     
     res.json({
       success: true,
@@ -95,6 +105,7 @@ router.post('/login', async (req, res) => {
     });
     
   } catch (error) {
+    console.error('Login Error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error', 
