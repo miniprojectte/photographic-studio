@@ -1,301 +1,383 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AdminProtection from '@/components/AdminProtection';
+import { bookingsAPI, sessionsAPI, authAPI, messagesAPI } from '@/app/utils/api';
 import {
-  LogOut,
-  Users,
   Calendar,
-  Settings,
+  Users,
   Camera,
+  MessageCircle,
+  IndianRupee,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  XCircle,
   ArrowRight,
   Image,
-  FileText,
-  MessageCircle,
-  Share2,
-  Shield,
-  CreditCard,
+  RefreshCw,
   Bell,
-  BarChart3,
-  Plus,
-  Edit,
-  Trash2,
-  Eye
+  LogOut,
+  FileSpreadsheet
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalUsers: 0,
     totalBookings: 0,
     pendingBookings: 0,
-    completedSessions: 0
+    confirmedBookings: 0,
+    totalSessions: 0,
+    scheduledSessions: 0,
+    completedSessions: 0,
+    totalUsers: 0,
+    totalRevenue: 0,
+    unreadMessages: 0
   });
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
 
   useEffect(() => {
-    // Check for token and admin role
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    const userType = localStorage.getItem('userType');
+    loadDashboardData();
+  }, []);
 
-    if (!token || !userData) {
-      router.push('/login');
-      return;
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch all data in parallel
+      const [bookingsRes, bookingStatsRes, sessionStatsRes, usersRes, messagesRes] = await Promise.all([
+        bookingsAPI.getAllBookings('?limit=5'),
+        bookingsAPI.getStats().catch(() => ({ data: {} })),
+        sessionsAPI.getAdminStats().catch(() => ({ data: {} })),
+        authAPI.getUsers().catch(() => ({ users: [] })),
+        messagesAPI.getAll().catch(() => ({ data: [] }))
+      ]);
+
+      // Process bookings
+      const bookings = bookingsRes.data || [];
+      setRecentBookings(bookings.slice(0, 5));
+
+      // Calculate booking stats
+      const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+      const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
+
+      // Session stats from API
+      const sessionStats = sessionStatsRes.data || {};
+
+      // Count unread messages (messages where admin is recipient and not read)
+      const messages = messagesRes.data || [];
+      const unreadMessages = messages.filter(m => !m.readAt && m.recipient?.role === 'admin').length;
+
+      setStats({
+        totalBookings: bookings.length,
+        pendingBookings,
+        confirmedBookings,
+        totalSessions: sessionStats.totalSessions || 0,
+        scheduledSessions: sessionStats.scheduledSessions || 0,
+        completedSessions: sessionStats.completedSessions || 0,
+        totalUsers: usersRes.users?.length || 0,
+        totalRevenue: sessionStats.totalRevenue || 0,
+        unreadMessages
+      });
+
+      // Get upcoming sessions
+      const sessionsRes = await sessionsAPI.getAllSessions('?status=Scheduled&limit=5').catch(() => ({ data: [] }));
+      setUpcomingSessions(sessionsRes.data || []);
+
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const parsedUser = JSON.parse(userData);
-    
-    // Check if user is admin
-    if (parsedUser.role !== 'admin' && userType !== 'admin') {
-      router.push('/dashboard'); // Redirect to regular dashboard
-      return;
-    }
-
-    setUser(parsedUser);
-    loadStats();
-    setLoading(false);
-  }, [router]);
-
-  const loadStats = async () => {
-    // Placeholder stats - you can implement API calls here
-    setStats({
-      totalUsers: 42,
-      totalBookings: 156,
-      pendingBookings: 8,
-      completedSessions: 134
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userType');
-    router.push('/login');
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400';
+      case 'confirmed': return 'bg-green-500/20 text-green-400';
+      case 'cancelled': return 'bg-red-500/20 text-red-400';
+      case 'completed': return 'bg-blue-500/20 text-blue-400';
+      case 'scheduled': return 'bg-[#C45D3E]/20 text-[#C45D3E]';
+      default: return 'bg-white/10 text-white/60';
+    }
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <AdminProtection>
+        <div className="min-h-screen flex items-center justify-center bg-[#0D0D0D]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-2 border-[#C45D3E] border-t-transparent rounded-full animate-spin" />
+            <p className="text-white/50">Loading dashboard...</p>
+          </div>
+        </div>
+      </AdminProtection>
+    );
   }
 
   return (
     <AdminProtection>
-    <div className="min-h-screen bg-gray-100">
-      {/* Admin Navigation */}
-      <nav className="bg-red-600 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Shield className="h-8 w-8 text-white mr-3" />
-              <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-red-100">Welcome, {user?.name}</span>
-              <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">Admin</span>
-              <Button
-                onClick={handleLogout}
-                variant="ghost"
-                size="sm"
-                className="text-red-100 hover:text-white hover:bg-red-500"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
+      <div className="min-h-screen bg-[#0D0D0D] text-white relative overflow-hidden">
+        {/* Background Glow Effects */}
+        <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+          {/* Top right orange glow */}
+          <div
+            className="absolute -top-20 -right-20 w-[500px] h-[500px] rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(196,93,62,0.4) 0%, rgba(196,93,62,0) 70%)',
+            }}
+          />
+          {/* Bottom left gold glow */}
+          <div
+            className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(212,168,83,0.35) 0%, rgba(212,168,83,0) 70%)',
+            }}
+          />
+          {/* Center ambient glow */}
+          <div
+            className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(196,93,62,0.15) 0%, transparent 60%)',
+            }}
+          />
+        </div>
+
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-[#0D0D0D]/90 backdrop-blur-xl border-b border-white/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C45D3E] to-[#A04A2F] flex items-center justify-center">
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="font-bold text-white">MN Studio Admin</h1>
+                  <p className="text-xs text-white/40">Management Dashboard</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={loadDashboardData}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw className="w-4 h-4 text-white/50" />
+                </button>
+                {stats.unreadMessages > 0 && (
+                  <Link href="/admin/messages" className="relative p-2 bg-white/5 hover:bg-white/10 rounded-lg">
+                    <Bell className="w-4 h-4 text-white/50" />
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#C45D3E] text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {stats.unreadMessages}
+                    </span>
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('userType');
+                    router.push('/login');
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium rounded-lg transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Welcome */}
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-lg shadow-md"
+            className="mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Users</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
-              </div>
-              <Users className="h-12 w-12 text-blue-600" />
-            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
+            <p className="text-white/50">Here's what's happening with your studio today.</p>
           </motion.div>
 
+          {/* Stats Grid */}
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-lg shadow-md"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Bookings</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalBookings}</p>
-              </div>
-              <Calendar className="h-12 w-12 text-green-600" />
-            </div>
+            {[
+              { label: 'Total Bookings', value: stats.totalBookings, icon: Calendar, color: '#C45D3E' },
+              { label: 'Pending', value: stats.pendingBookings, icon: Clock, color: '#EAB308' },
+              { label: 'Active Sessions', value: stats.scheduledSessions, icon: Camera, color: '#22C55E' },
+              { label: 'Total Users', value: stats.totalUsers, icon: Users, color: '#D4A853' }
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                className="p-5 rounded-xl bg-[#161616] border border-white/5"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + index * 0.05 }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${stat.color}20` }}
+                  >
+                    <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-white">{stat.value}</p>
+                <p className="text-sm text-white/40">{stat.label}</p>
+              </motion.div>
+            ))}
           </motion.div>
 
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-lg shadow-md"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending Bookings</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.pendingBookings}</p>
+          {/* Revenue Card */}
+          {stats.totalRevenue > 0 && (
+            <motion.div
+              className="mb-8 p-6 rounded-xl bg-gradient-to-r from-[#C45D3E]/20 to-[#D4A853]/20 border border-white/5"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white/50 mb-1">Total Revenue</p>
+                  <p className="text-4xl font-bold text-gradient-warm">₹{stats.totalRevenue.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="w-16 h-16 rounded-2xl bg-[#D4A853]/20 flex items-center justify-center">
+                  <IndianRupee className="w-8 h-8 text-[#D4A853]" />
+                </div>
               </div>
-              <Bell className="h-12 w-12 text-orange-600" />
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
 
+          {/* Quick Links */}
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-lg shadow-md"
+            className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completed Sessions</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.completedSessions}</p>
-              </div>
-              <Camera className="h-12 w-12 text-purple-600" />
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Admin Actions */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-lg shadow-md lg:col-span-1"
-          >
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <Settings className="h-5 w-5 mr-2 text-red-600" />
-              Admin Actions
-            </h2>
-            <div className="space-y-3">
-              <Link href="/admin/users">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Users className="h-4 w-4" />
-                  Manage Users
-                </Button>
+            {[
+              { label: 'Bookings', href: '/admin/bookings', icon: Calendar, count: stats.pendingBookings },
+              { label: 'Sessions', href: '/admin/sessions', icon: Camera },
+              { label: 'Messages', href: '/admin/messages', icon: MessageCircle, count: stats.unreadMessages },
+              { label: 'Users', href: '/admin/users', icon: Users },
+              { label: 'Gallery', href: '/admin/gallery', icon: Image },
+              { label: 'Reports', href: '/admin/reports', icon: FileSpreadsheet }
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="relative p-4 rounded-xl bg-[#161616] border border-white/5 hover:border-[#C45D3E]/30 transition-all group"
+              >
+                <link.icon className="w-6 h-6 text-[#C45D3E] mb-2" />
+                <p className="text-white font-medium">{link.label}</p>
+                {link.count > 0 && (
+                  <span className="absolute top-3 right-3 px-2 py-0.5 bg-[#C45D3E] text-white text-xs font-bold rounded-full">
+                    {link.count}
+                  </span>
+                )}
+                <ArrowRight className="absolute bottom-4 right-4 w-4 h-4 text-white/20 group-hover:text-[#C45D3E] transition-colors" />
               </Link>
-              <Link href="/admin/bookings">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Calendar className="h-4 w-4" />
-                  Manage Bookings
-                </Button>
-              </Link>
-              <Link href="/admin/sessions">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Camera className="h-4 w-4" />
-                  Manage Sessions
-                </Button>
-              </Link>
-              <Link href="/admin/gallery">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Image className="h-4 w-4" />
-                  Manage Gallery
-                </Button>
-              </Link>
-              <Link href="/admin/reports">
-                <Button variant="ghost" className="w-full justify-start">
-                  <BarChart3 className="h-4 w-4" />
-                  Reports & Analytics
-                </Button>
-              </Link>
-            </div>
+            ))}
           </motion.div>
 
-          {/* Recent Activity */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-white p-6 rounded-lg shadow-md lg:col-span-2"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Recent Activity</h2>
-              <Button variant="outline" size="sm">
-                View All
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-shrink-0">
-                  <Users className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">New user registered</p>
-                  <p className="text-sm text-gray-600">john.doe@email.com - 2 hours ago</p>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Bookings */}
+            <motion.div
+              className="bg-[#161616] rounded-xl border border-white/5 overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <h3 className="font-semibold text-white">Recent Bookings</h3>
+                <Link href="/admin/bookings" className="text-sm text-[#C45D3E] hover:underline">
+                  View All
+                </Link>
               </div>
-              
-              <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-shrink-0">
-                  <Calendar className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">New booking request</p>
-                  <p className="text-sm text-gray-600">Wedding session - 4 hours ago</p>
-                </div>
+              <div className="divide-y divide-white/5">
+                {recentBookings.length > 0 ? (
+                  recentBookings.map((booking) => (
+                    <div key={booking._id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-white">{booking.name}</p>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                          {booking.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-white/40">
+                        <span className="capitalize">{booking.sessionType}</span>
+                        <span>{formatDate(booking.date)}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-white/40">
+                    No bookings yet
+                  </div>
+                )}
               </div>
-              
-              <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-shrink-0">
-                  <Camera className="h-8 w-8 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">Session completed</p>
-                  <p className="text-sm text-gray-600">Portrait session with Sarah - 1 day ago</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+            </motion.div>
 
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="bg-white p-6 rounded-lg shadow-md"
-          >
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button className="h-20 flex flex-col space-y-2">
-                <Plus className="h-6 w-6" />
-                <span>Add User</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col space-y-2">
-                <Calendar className="h-6 w-6" />
-                <span>New Booking</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col space-y-2">
-                <FileText className="h-6 w-6" />
-                <span>Generate Report</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col space-y-2">
-                <Settings className="h-6 w-6" />
-                <span>System Settings</span>
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* User Dashboard Link */}
-        <div className="mt-8 text-center">
-          <Link href="/dashboard">
-            <Button variant="ghost" className="text-blue-600 hover:text-blue-700">
-              <Eye className="h-4 w-4" />
-              View User Dashboard
-            </Button>
-          </Link>
+            {/* Upcoming Sessions */}
+            <motion.div
+              className="bg-[#161616] rounded-xl border border-white/5 overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <h3 className="font-semibold text-white">Upcoming Sessions</h3>
+                <Link href="/admin/sessions" className="text-sm text-[#C45D3E] hover:underline">
+                  View All
+                </Link>
+              </div>
+              <div className="divide-y divide-white/5">
+                {upcomingSessions.length > 0 ? (
+                  upcomingSessions.map((session) => (
+                    <div key={session._id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-white">{session.client?.name || 'Unknown Client'}</p>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
+                          {session.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-white/40">
+                        <span>{session.sessionType}</span>
+                        <span>{formatDate(session.date)}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-white/40">
+                    No upcoming sessions
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
-    </div>
     </AdminProtection>
   );
 }

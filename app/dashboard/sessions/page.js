@@ -1,380 +1,240 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, User, Phone, Mail, MessageSquare, Plus, Filter, Search, Eye, Edit, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import BookingForm from '@/components/BookingForm';
+import { sessionsAPI, bookingsAPI } from '@/app/utils/api';
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  Camera,
+  Filter,
+  Search,
+  ChevronRight,
+  Plus,
+  Aperture
+} from 'lucide-react';
 
-const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-  completed: 'bg-blue-100 text-blue-800'
-};
-
-const sessionTypeLabels = {
-  portrait: 'Portrait Session',
-  wedding: 'Wedding Photography',
-  family: 'Family Photos',
-  event: 'Event Photography',
-  commercial: 'Commercial Shoot'
-};
-
-export default function Sessions() {
-  const [bookings, setBookings] = useState([]);
+export default function DashboardSessions() {
+  const router = useRouter();
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [filters, setFilters] = useState({
-    status: '',
-    sessionType: '',
-    search: ''
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    pages: 0
-  });
+  const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Check authentication
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = '/login';
+      router.push('/login');
       return;
     }
-    fetchBookings();
-  }, [filters, pagination.page]);
+    loadSessions();
+  }, [router]);
 
-  const fetchBookings = async () => {
+  const loadSessions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        window.location.href = '/login';
-        return;
-      }
+      const [sessionsData, bookingsData] = await Promise.all([
+        sessionsAPI.getUserSessions(),
+        bookingsAPI.getUserBookings()
+      ]);
 
-      const queryParams = new URLSearchParams({
-        page: pagination.page,
-        limit: pagination.limit,
-        ...(filters.status && { status: filters.status }),
-        ...(filters.sessionType && { sessionType: filters.sessionType })
-      });
+      const allItems = [
+        ...(sessionsData.sessions || []).map(s => ({ ...s, source: 'session' })),
+        ...(bookingsData.bookings || []).map(b => ({ ...b, source: 'booking' }))
+      ];
 
-      const response = await fetch(`http://localhost:5000/api/bookings/my-bookings?${queryParams}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-        return;
-      }
-      
-      const data = await response.json();
-      if (data.success) {
-        let filteredBookings = data.data;
-        
-        // Apply client-side search filter
-        if (filters.search) {
-          filteredBookings = filteredBookings.filter(booking =>
-            booking.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-            booking.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-            booking.sessionType.toLowerCase().includes(filters.search.toLowerCase())
-          );
-        }
-        
-        setBookings(filteredBookings);
-        if (data.pagination) {
-          setPagination(prev => ({
-            ...prev,
-            total: data.pagination.total,
-            pages: data.pagination.pages
-          }));
-        }
-      }
+      setSessions(allItems);
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      console.error('Error loading sessions:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBookingCreated = (newBooking) => {
-    setBookings(prev => [newBooking, ...prev]);
-    setShowForm(false);
-    fetchBookings(); // Refresh the list to get updated pagination
+  const getStatusStyle = (status) => {
+    const styles = {
+      'scheduled': 'bg-[#D4A853]/20 text-[#D4A853] border-[#D4A853]/30',
+      'confirmed': 'bg-green-500/20 text-green-400 border-green-500/30',
+      'in-progress': 'bg-[#C45D3E]/20 text-[#C45D3E] border-[#C45D3E]/30',
+      'completed': 'bg-green-500/20 text-green-400 border-green-500/30',
+      'cancelled': 'bg-red-500/20 text-red-400 border-red-500/30',
+      'pending': 'bg-[#D4A853]/20 text-[#D4A853] border-[#D4A853]/30'
+    };
+    return styles[status?.toLowerCase()] || styles['pending'];
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when filtering
-  };
-
-  const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  };
-
-  const getStatusBadge = (status) => {
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/bookings/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setBookings(bookings.filter(booking => booking._id !== id));
-        if (window.notify) {
-          window.notify.success('Booking cancelled successfully', {
-            title: 'Success'
-          });
-        } else {
-          alert('Booking cancelled successfully');
-        }
-      } else {
-        const errorMessage = data.message || 'Failed to cancel booking';
-        if (window.notify) {
-          window.notify.error(errorMessage, {
-            title: 'Error'
-          });
-        } else {
-          alert(errorMessage);
-        }
-      }
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
-      const errorMessage = 'An error occurred while cancelling the booking';
-      if (window.notify) {
-        window.notify.error(errorMessage, {
-          title: 'Error'
-        });
-      } else {
-        alert(errorMessage);
-      }
-    }
-  };
+  const filteredSessions = sessions.filter(session => {
+    const matchesFilter = filter === 'all' || session.status?.toLowerCase() === filter;
+    const matchesSearch = session.sessionType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      session.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0D0D]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-[#C45D3E] border-t-transparent rounded-full animate-spin" />
+          <p className="text-white/50">Loading sessions...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {showForm ? (
-        <BookingForm 
-          onBookingCreated={handleBookingCreated}
-          onCancel={() => setShowForm(false)}
-        />
-      ) : (
-        <>
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
-              <p className="text-gray-600 mt-1">Manage your photography session bookings</p>
+    <div className="min-h-screen bg-[#0D0D0D] text-white">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-[#0D0D0D]/90 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to Dashboard</span>
+              </Link>
             </div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                New Booking
-              </Button>
-            </motion.div>
+            <Link
+              href="/booking"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#C45D3E] to-[#A04A2F] text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-[#C45D3E]/20 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Book New Session
+            </Link>
           </div>
+        </div>
+      </header>
 
-          {/* Filters */}
-          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Search className="inline h-4 w-4 mr-1" />
-                  Search
-                </label>
-                <input
-                  type="text"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                  placeholder="Search by name, email..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Title */}
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h1 className="text-3xl font-bold text-white mb-2">My Sessions</h1>
+          <p className="text-white/50">View and manage all your photography sessions</p>
+        </motion.div>
 
-              {/* Status Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Filter className="inline h-4 w-4 mr-1" />
-                  Status
-                </label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              {/* Session Type Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Session Type
-                </label>
-                <select
-                  value={filters.sessionType}
-                  onChange={(e) => handleFilterChange('sessionType', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Types</option>
-                  <option value="portrait">Portrait</option>
-                  <option value="wedding">Wedding</option>
-                  <option value="family">Family</option>
-                  <option value="event">Event</option>
-                  <option value="commercial">Commercial</option>
-                </select>
-              </div>
-
-              {/* Reset Filters */}
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setFilters({ status: '', sessionType: '', search: '' });
-                    setPagination(prev => ({ ...prev, page: 1 }));
-                  }}
-                  className="w-full"
-                >
-                  Reset Filters
-                </Button>
-              </div>
-            </div>
+        {/* Filters */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-4 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+            <input
+              type="text"
+              placeholder="Search sessions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#C45D3E] transition-colors"
+            />
           </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+            {['all', 'scheduled', 'completed', 'cancelled'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${filter === status
+                    ? 'bg-[#C45D3E] text-white'
+                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </button>
+            ))}
+          </div>
+        </motion.div>
 
-          {/* Bookings List */}
-          {bookings.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No bookings found</p>
-              <p className="text-gray-400 mt-2">Create your first booking to get started</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {bookings.map((booking) => (
+        {/* Sessions List */}
+        {filteredSessions.length > 0 ? (
+          <div className="space-y-4">
+            {filteredSessions.map((session, index) => {
+              const sessionDate = session.date ? new Date(session.date) : null;
+
+              return (
                 <motion.div
-                  key={booking._id}
+                  key={session._id}
+                  className="p-6 rounded-2xl bg-[#161616] border border-white/5 hover:border-[#C45D3E]/20 transition-all"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-lg shadow-md p-6"
+                  transition={{ delay: index * 0.05 }}
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        {sessionTypeLabels[booking.sessionType]}
-                      </h3>
-                      <p className="text-gray-600 mt-1">{booking.name}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(booking.status)}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(booking._id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center text-gray-600">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <span>{formatDate(booking.date)}</span>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-[#C45D3E]/10 flex items-center justify-center flex-shrink-0">
+                        <Camera className="w-6 h-6 text-[#C45D3E]" />
                       </div>
-                      <div className="flex items-center text-gray-600">
-                        <Clock className="h-4 w-4 mr-2" />
-                        <span>{new Date(booking.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <Phone className="h-4 w-4 mr-2" />
-                        <span>{booking.phone}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center text-gray-600">
-                        <Mail className="h-4 w-4 mr-2" />
-                        <span>{booking.email}</span>
-                      </div>
-                      {booking.notes && (
-                        <div className="flex items-start text-gray-600">
-                          <MessageSquare className="h-4 w-4 mr-2 mt-1" />
-                          <span className="text-sm">{booking.notes}</span>
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-white">
+                            {session.title || `${session.sessionType || 'Photography'} Session`}
+                          </h3>
+                          <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${getStatusStyle(session.status)}`}>
+                            {session.status || 'Pending'}
+                          </span>
                         </div>
-                      )}
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-white/40">
+                          {sessionDate && (
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4" />
+                              {sessionDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                          )}
+                          {sessionDate && (
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4" />
+                              {sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
+                          {session.location && (
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="w-4 h-4" />
+                              {typeof session.location === 'object' ? session.location.address : session.location}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors">
+                      View Details
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </motion.div>
-              ))}
+              );
+            })}
+          </div>
+        ) : (
+          <motion.div
+            className="text-center py-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-white/5 flex items-center justify-center">
+              <Calendar className="w-10 h-10 text-white/20" />
             </div>
-          )}
-
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="mt-6 flex justify-center items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-gray-600">
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.pages}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+            <h3 className="text-xl font-semibold text-white mb-2">No Sessions Found</h3>
+            <p className="text-white/50 mb-6">
+              {filter !== 'all' ? `No ${filter} sessions yet.` : "You haven't booked any sessions yet."}
+            </p>
+            <Link
+              href="/booking"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#C45D3E] to-[#A04A2F] text-white font-medium rounded-xl transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Book Your First Session
+            </Link>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }

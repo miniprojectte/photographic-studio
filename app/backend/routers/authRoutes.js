@@ -161,7 +161,7 @@ router.get('/users', protect, async (req, res) => {
     const users = await User.find({}, '-password'); // Exclude password from response
     res.json({
       success: true,
-      users
+      data: users
     });
   } catch (error) {
     res.status(500).json({ 

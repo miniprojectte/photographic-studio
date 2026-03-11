@@ -1,87 +1,38 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import AdminProtection from '@/components/AdminProtection';
+import { authAPI } from '@/app/utils/api';
 import {
   ArrowLeft,
-  Users,
   Search,
-  Plus,
-  Edit,
-  Trash2,
-  Shield,
   User,
   Mail,
-  Calendar
+  Calendar,
+  Shield,
+  Users,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function AdminUsers() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
 
   useEffect(() => {
-    // Check admin access
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    const userType = localStorage.getItem('userType');
-
-    if (!token || !userData) {
-      router.push('/login');
-      return;
-    }
-
-    const parsedUser = JSON.parse(userData);
-    if (parsedUser.role !== 'admin' && userType !== 'admin') {
-      router.push('/dashboard');
-      return;
-    }
-
     loadUsers();
-  }, [router]);
+  }, []);
 
   const loadUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.users || []);
-      } else {
-        console.error('Failed to load users');
-        // Fallback to mock data for demo
-        setUsers([
-          {
-            _id: '1',
-            name: 'John Doe',
-            email: 'john.doe@email.com',
-            role: 'user',
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: '2',
-            name: 'Jane Smith',
-            email: 'jane.smith@email.com',
-            role: 'user',
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: '3',
-            name: 'Administrator',
-            email: 'admin@admin.com',
-            role: 'admin',
-            createdAt: new Date().toISOString()
-          }
-        ]);
-      }
+      setLoading(true);
+      const response = await authAPI.getUsers();
+      setUsers(response.users || []);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
@@ -89,177 +40,249 @@ export default function AdminUsers() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
 
-  const handleDeleteUser = async (userId, userEmail) => {
-    if (userEmail === 'admin@admin.com') {
-      alert('Cannot delete the main admin user');
-      return;
-    }
-    
-    if (confirm('Are you sure you want to delete this user?')) {
-      // Implement delete functionality here
-      console.log('Deleting user:', userId);
-      setUsers(users.filter(user => user._id !== userId));
-    }
+  const stats = {
+    total: users.length,
+    admins: users.filter(u => u.role === 'admin').length,
+    regularUsers: users.filter(u => u.role === 'user').length
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <AdminProtection>
+        <div className="min-h-screen flex items-center justify-center bg-[#0D0D0D]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-2 border-[#C45D3E] border-t-transparent rounded-full animate-spin" />
+            <p className="text-white/50">Loading users...</p>
+          </div>
+        </div>
+      </AdminProtection>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/admin">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Admin
-                </Button>
-              </Link>
-              <div className="flex items-center space-x-2">
-                <Users className="h-6 w-6 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-              </div>
-            </div>
-            <Button>
-              <Plus className="h-4 w-4" />
-              Add User
-            </Button>
-          </div>
+    <AdminProtection>
+      <div className="min-h-screen bg-[#0D0D0D] text-white relative overflow-hidden">
+        {/* Background Glow Effects */}
+        <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+          <div
+            className="absolute -top-20 -right-20 w-[500px] h-[500px] rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(196,93,62,0.4) 0%, rgba(196,93,62,0) 70%)' }}
+          />
+          <div
+            className="absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full"
+            style={{ background: 'radial-gradient(circle, rgba(212,168,83,0.35) 0%, rgba(212,168,83,0) 70%)' }}
+          />
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search and Filters */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-[#0D0D0D]/90 backdrop-blur-xl border-b border-white/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to Admin</span>
+              </Link>
+              <button
+                onClick={loadUsers}
+                className="flex items-center gap-2 px-4 py-2 bg-white/5 text-white/70 text-sm font-medium rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Title */}
+          <motion.div
+            className="mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="text-3xl font-bold text-white mb-2">Manage Users</h1>
+            <p className="text-white/50">View all registered users</p>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            className="grid grid-cols-3 gap-4 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="p-5 rounded-xl bg-[#161616] border border-white/5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-white">{stats.total}</p>
+              <p className="text-sm text-white/40">Total Users</p>
+            </div>
+            <div className="p-5 rounded-xl bg-[#161616] border border-white/5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-[#C45D3E]/20 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-[#C45D3E]" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-[#C45D3E]">{stats.admins}</p>
+              <p className="text-sm text-white/40">Admins</p>
+            </div>
+            <div className="p-5 rounded-xl bg-[#161616] border border-white/5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4A853]/20 flex items-center justify-center">
+                  <User className="w-5 h-5 text-[#D4A853]" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-[#D4A853]">{stats.regularUsers}</p>
+              <p className="text-sm text-white/40">Clients</p>
+            </div>
+          </motion.div>
+
+          {/* Filters */}
+          <motion.div
+            className="flex flex-col sm:flex-row gap-4 mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
               <input
                 type="text"
-                placeholder="Search users by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-[#161616] border border-white/5 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#C45D3E] transition-colors"
               />
             </div>
-            <Button variant="outline">Filter</Button>
-          </div>
-        </div>
+            <div className="flex gap-2">
+              {['all', 'user', 'admin'].map((role) => (
+                <button
+                  key={role}
+                  onClick={() => setFilterRole(role)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterRole === role
+                    ? 'bg-[#C45D3E] text-white'
+                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    }`}
+                >
+                  {role === 'all' ? 'All' : role === 'user' ? 'Clients' : 'Admins'}
+                </button>
+              ))}
+            </div>
+          </motion.div>
 
-        {/* Users Table */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold">All Users ({filteredUsers.length})</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
-                  <motion.tr
-                    key={user._id}
-                    whileHover={{ backgroundColor: '#f9fafb' }}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <User className="h-5 w-5 text-gray-600" />
+          {/* Users Table */}
+          <motion.div
+            className="bg-[#161616] rounded-2xl border border-white/5 overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            {filteredUsers.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="border-b border-white/5">
+                    <tr>
+                      <th className="text-left p-4 text-sm font-medium text-white/50">User</th>
+                      <th className="text-left p-4 text-sm font-medium text-white/50">Email</th>
+                      <th className="text-left p-4 text-sm font-medium text-white/50">Role</th>
+                      <th className="text-left p-4 text-sm font-medium text-white/50">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredUsers.map((user, index) => (
+                      <motion.tr
+                        key={user._id || index}
+                        className="hover:bg-white/[0.02] transition-colors"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 + index * 0.03 }}
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm ${user.role === 'admin'
+                              ? 'bg-gradient-to-br from-[#C45D3E] to-[#A04A2F]'
+                              : 'bg-gradient-to-br from-[#D4A853] to-[#B8923E]'
+                              }`}>
+                              {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                              <p className="font-medium text-white">{user.name || 'Unknown'}</p>
+                              <p className="text-xs text-white/40">ID: {user._id?.slice(-8) || 'N/A'}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">{user.email}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.role === 'admin' 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.role === 'admin' ? (
-                          <>
-                            <Shield className="h-3 w-3 mr-1" />
-                            Admin
-                          </>
-                        ) : (
-                          <>
-                            <User className="h-3 w-3 mr-1" />
-                            User
-                          </>
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleDeleteUser(user._id, user.email)}
-                          className="text-red-600 hover:text-red-700"
-                          disabled={user.email === 'admin@admin.com'}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2 text-white/70">
+                            <Mail className="w-4 h-4 text-white/30" />
+                            {user.email}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
+                            ? 'bg-[#C45D3E]/20 text-[#C45D3E]'
+                            : 'bg-white/5 text-white/60'
+                            }`}>
+                            {user.role === 'admin' && <Shield className="w-3 h-3" />}
+                            {user.role === 'admin' ? 'Admin' : 'Client'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2 text-white/50 text-sm">
+                            <Calendar className="w-4 h-4" />
+                            {formatDate(user.createdAt)}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <User className="w-12 h-12 mx-auto mb-4 text-white/20" />
+                <h3 className="text-lg font-medium text-white mb-1">No Users Found</h3>
+                <p className="text-white/50">
+                  {searchQuery || filterRole !== 'all'
+                    ? 'Try adjusting your search or filters'
+                    : 'No users have registered yet'}
+                </p>
+              </div>
+            )}
+          </motion.div>
 
-        {filteredUsers.length === 0 && (
-          <div className="text-center py-8">
-            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No users found matching your search.</p>
-          </div>
-        )}
+          {/* Info Footer */}
+          <motion.div
+            className="mt-6 text-center text-white/30 text-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            Showing {filteredUsers.length} of {users.length} users
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </AdminProtection>
   );
 }

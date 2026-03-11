@@ -3,16 +3,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, ArrowRight, ArrowLeft, UserCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Mail, Lock, User, ArrowRight, ArrowLeft, Aperture, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { authAPI } from '../utils/api';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 export default function Register() {
   const router = useRouter();
@@ -20,11 +12,10 @@ export default function Register() {
     email: '',
     password: '',
     username: '',
-    userType: 'user' // default to user
   });
-
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,11 +24,9 @@ export default function Register() {
 
     try {
       const data = await authAPI.register(formData);
-
-      // Show success message and redirect to login page
       alert('Registration successful! Please login to continue.');
       router.push('/login');
-      
+
     } catch (error) {
       console.error('Registration error:', error);
       setError(error.message || 'An error occurred during registration');
@@ -54,151 +43,275 @@ export default function Register() {
     }));
   };
 
-  const handleUserTypeChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      userType: value
-    }));
-  };
+  const benefits = [
+    'Book photo sessions online',
+    'Access your photo gallery',
+    'Get exclusive offers',
+    'Priority booking access'
+  ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700 p-4">
-      <div className="w-full max-w-[400px]">
-        <Link
-          href="/"
-          className="inline-flex items-center text-white mb-4 hover:text-blue-100 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Link>
+    <div className="min-h-screen flex bg-[#0D0D0D] relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0">
+        <div className="absolute top-[20%] left-[5%] w-[500px] h-[500px] bg-[#C45D3E]/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[20%] right-[5%] w-[400px] h-[400px] bg-[#D4A853]/5 rounded-full blur-[100px]" />
+      </div>
+
+      {/* Left side - Form */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative z-10">
         <motion.div
+          className="w-full max-w-[420px]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="backdrop-blur-sm bg-white/90 p-8 rounded-2xl shadow-xl"
+          transition={{ duration: 0.6 }}
         >
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-            <p className="mt-2 text-gray-600">Register for a new account</p>
+          {/* Back to home link */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-white/50 hover:text-white text-sm mb-8 transition-colors group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Home
+          </Link>
+
+          {/* Mobile logo */}
+          <div className="flex lg:hidden items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C45D3E] to-[#A04A2F] flex items-center justify-center">
+              <Aperture className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-white">MN Studio</span>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                Username
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter your username"
-                />
-              </div>
+          {/* Form card */}
+          <div className="bg-[#161616]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-8 shadow-2xl">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-white mb-2">Create Account</h2>
+              <p className="text-white/50">Join MN Studio and start your creative journey</p>
             </div>
 
-            <div className="relative">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter your email"
-                />
-              </div>
-            </div>
-
-            <div className="relative">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter your password"
-                />
-              </div>
-            </div>
-
-            <div className="relative">
-              <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
-                Account Type
-              </label>
-              <div className="relative">
-                <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 z-10" />
-                <Select value={formData.userType} onValueChange={handleUserTypeChange}>
-                  <SelectTrigger className="pl-10 w-full">
-                    <SelectValue placeholder="Select account type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Username field */}
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-white/80 mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    required
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#C45D3E] focus:ring-1 focus:ring-[#C45D3E]/30 transition-all"
+                    placeholder="John Doe"
+                  />
                 </div>
               </div>
-            </div>
-          )}
-          
-          <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="mt-6"
-            >
-              <Button
+
+              {/* Email field */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#C45D3E] focus:ring-1 focus:ring-[#C45D3E]/30 transition-all"
+                    placeholder="your@email.com"
+                  />
+                </div>
+              </div>
+
+              {/* Password field */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full pl-12 pr-12 py-3.5 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#C45D3E] focus:ring-1 focus:ring-[#C45D3E]/30 transition-all"
+                    placeholder="Create a strong password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-white/30 text-xs mt-2">Must be at least 8 characters long</p>
+              </div>
+
+              {/* Error message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl"
+                >
+                  <p className="text-red-400 text-sm">{error}</p>
+                </motion.div>
+              )}
+
+              {/* Terms */}
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  required
+                  className="mt-1 w-4 h-4 rounded bg-white/5 border-white/10 text-[#C45D3E] focus:ring-[#C45D3E]/30"
+                />
+                <label htmlFor="terms" className="text-sm text-white/50">
+                  I agree to the{' '}
+                  <Link href="#" className="text-[#C45D3E] hover:text-[#D97B5D]">Terms of Service</Link>
+                  {' '}and{' '}
+                  <Link href="#" className="text-[#C45D3E] hover:text-[#D97B5D]">Privacy Policy</Link>
+                </label>
+              </div>
+
+              {/* Submit button */}
+              <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="w-full"
-                size="lg"
+                className="w-full py-4 bg-gradient-to-r from-[#C45D3E] to-[#A04A2F] text-white font-medium rounded-xl shadow-lg shadow-[#C45D3E]/20 hover:shadow-[#C45D3E]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 group"
+                whileHover={{ scale: isLoading ? 1 : 1.01 }}
+                whileTap={{ scale: isLoading ? 1 : 0.99 }}
               >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-                {!isLoading && <ArrowRight className="h-4 w-4" />}
-              </Button>
-            </motion.div>
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </motion.button>
+            </form>
 
-            <div className="mt-4 text-center">
-              <Link
-                href="/login"
-                className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Already have an account? Sign in
-              </Link>
+            {/* Divider */}
+            <div className="flex items-center gap-4 my-6">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-white/30 text-sm">or</span>
+              <div className="flex-1 h-px bg-white/10" />
             </div>
-          </form>
+
+            {/* Login link */}
+            <p className="text-center text-white/50">
+              Already have an account?{' '}
+              <Link href="/login" className="text-[#C45D3E] hover:text-[#D97B5D] font-medium transition-colors">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </motion.div>
       </div>
+
+      {/* Right side - Branding panel (hidden on mobile) */}
+      <motion.div
+        className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12"
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-bl from-[#1A1512]/80 to-[#0D0D0D]" />
+        <div className="absolute inset-0 border-l border-white/5" />
+
+        {/* Decorative grid */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '50px 50px'
+          }}
+        />
+
+        <div className="relative z-10 max-w-md">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C45D3E] to-[#A04A2F] flex items-center justify-center shadow-lg shadow-[#C45D3E]/20">
+              <Aperture className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-2xl font-bold text-white">MN Studio</span>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4A853]">Photography</p>
+            </div>
+          </div>
+
+          {/* Welcome text */}
+          <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+            Start capturing<br />
+            <span className="text-gradient-warm">beautiful moments</span>
+          </h1>
+          <p className="text-white/50 text-lg mb-12 leading-relaxed">
+            Create your account and unlock access to professional photography services, exclusive galleries, and personalized booking experience.
+          </p>
+
+          {/* Benefits list */}
+          <div className="space-y-4">
+            {benefits.map((benefit, i) => (
+              <motion.div
+                key={benefit}
+                className="flex items-center gap-3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 + i * 0.1 }}
+              >
+                <div className="w-6 h-6 rounded-full bg-[#C45D3E]/20 flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-[#C45D3E]" />
+                </div>
+                <span className="text-white/70">{benefit}</span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Testimonial */}
+          <motion.div
+            className="mt-12 p-6 bg-white/[0.03] border border-white/5 rounded-2xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <p className="text-white/60 italic mb-4">
+              "MN Studio captured our wedding beautifully. The online gallery made sharing with family so easy!"
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4A853] to-[#B8923E] flex items-center justify-center text-white font-medium text-sm">
+                SM
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">Sarah Mitchell</p>
+                <p className="text-white/40 text-xs">Happy Client</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
   );
 }

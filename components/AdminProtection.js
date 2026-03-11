@@ -20,7 +20,7 @@ export default function AdminProtection({ children }) {
 
       try {
         const parsedUser = JSON.parse(userData);
-        
+
         // Check if user has admin role
         if (parsedUser.role === 'admin' || userType === 'admin') {
           setIsAuthorized(true);
@@ -42,10 +42,10 @@ export default function AdminProtection({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-[#0D0D0D]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying admin access...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#C45D3E] border-t-transparent mx-auto mb-4"></div>
+          <p className="text-white/50">Verifying admin access...</p>
         </div>
       </div>
     );

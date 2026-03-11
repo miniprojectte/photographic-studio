@@ -14,7 +14,7 @@ connectDB();
 const corsOptions = {
   origin: [
     'http://localhost:3000',
-    'http://localhost:3001', 
+    'http://localhost:3001',
     'http://localhost:3002',
     'http://localhost:3003',
     'http://127.0.0.1:3000',
@@ -34,7 +34,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', true);
-  
+
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
@@ -43,12 +43,20 @@ app.use((req, res, next) => {
   }
 });
 
-app.use(express.json());
+// JSON body parser - but not for upload routes (multer handles those)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/upload')) {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
+
 app.use(morgan('dev')); // HTTP request logger
 
 // Welcome route
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Welcome to the Photography Studio API',
     version: '1.0.0'
   });
@@ -60,6 +68,9 @@ app.use('/api/profile', require('./routers/profileRoutes'));
 app.use('/api/sessions', require('./routers/sessionRoutes'));
 app.use('/api/photos', require('./routers/photoRoutes'));
 app.use('/api/bookings', require('./routers/bookingRoutes'));
+app.use('/api/messages', require('./routers/messageRoutes'));
+app.use('/api/upload', require('./routers/uploadRoutes'));
+app.use('/api/reports', require('./routers/reportRoutes'));
 
 // 404 Handler
 app.use((req, res) => {

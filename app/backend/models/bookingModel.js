@@ -24,7 +24,7 @@ const bookingSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    match: [/^\+?[\d\s-]{10,}$/, 'Please enter a valid phone number']
+    match: [/^(\+91[\s-]?)?[6-9]\d{9}$/, 'Please enter a valid Indian phone number']
   },
   sessionType: {
     type: String,
