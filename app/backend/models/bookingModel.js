@@ -36,7 +36,7 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     required: [true, 'Booking date is required'],
     validate: {
-      validator: function(v) {
+      validator: function (v) {
         return v > new Date();
       },
       message: 'Booking date must be in the future'
@@ -51,6 +51,23 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'confirmed', 'cancelled', 'completed'],
     default: 'pending'
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending'
+  },
+  paymentId: {
+    type: String,   // Razorpay payment_id (e.g. pay_xxxxx)
+    default: null
+  },
+  orderId: {
+    type: String,   // Razorpay order_id (e.g. order_xxxxx)
+    default: null
+  },
+  amount: {
+    type: Number,   // Booking price in INR
+    default: 0
   }
 }, {
   timestamps: true

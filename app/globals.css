@@ -541,6 +541,37 @@
    IMAGE TREATMENTS
    ================================ */
 
+/* ================================
+   PHOTO PROTECTION
+   Prevents right-click / drag saving of images
+   ================================ */
+
+img {
+  /* Prevent drag-to-save */
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+
+  /* Prevent text/image selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
+  /* Disable long-press context menu on iOS / Android */
+  -webkit-touch-callout: none;
+
+  /* Block pointer events on the image itself (parent receives clicks) */
+  pointer-events: none;
+}
+
+/* Re-enable pointer events for gallery images that need click-to-open */
+.gallery-clickable img {
+  pointer-events: auto;
+}
+
 .image-frame {
   position: relative;
   border-radius: 1rem;

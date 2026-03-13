@@ -71,6 +71,7 @@ app.use('/api/bookings', require('./routers/bookingRoutes'));
 app.use('/api/messages', require('./routers/messageRoutes'));
 app.use('/api/upload', require('./routers/uploadRoutes'));
 app.use('/api/reports', require('./routers/reportRoutes'));
+app.use('/api/payment', require('./routers/paymentRoutes'));
 
 // 404 Handler
 app.use((req, res) => {

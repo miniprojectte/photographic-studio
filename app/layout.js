@@ -2,6 +2,7 @@ import { Outfit, Playfair_Display, Montserrat, Inter } from "next/font/google";
 import "./globals.css";
 import NotificationProvider from "./components/NotificationProvider";
 import BackgroundWrapper from "@/components/BackgroundWrapper";
+import PhotoProtection from "./components/PhotoProtection";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -43,6 +44,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${outfit.variable} ${playfair.variable} ${montserrat.variable} ${inter.variable} font-sans antialiased bg-[#0D0D0D] text-white`}>
+        <PhotoProtection />
         <NotificationProvider>
           <BackgroundWrapper>
             {children}
