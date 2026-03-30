@@ -10,7 +10,7 @@ const services = [
     title: "Portrait Sessions",
     description: "Professional headshots and personal branding photography that capture your unique personality.",
     features: ["Indoor & outdoor options", "Professional retouching", "Multiple outfit changes", "Digital gallery delivery"],
-    price: "From $199",
+    price: "From ₹199",
     popular: false
   },
   {
@@ -18,7 +18,7 @@ const services = [
     title: "Wedding Photography",
     description: "Comprehensive wedding coverage that tells the story of your special day from start to finish.",
     features: ["Full day coverage", "Two photographers", "Engagement session", "Premium album", "Online gallery"],
-    price: "From $2,499",
+    price: "From ₹2,499",
     popular: true
   },
   {
@@ -26,7 +26,7 @@ const services = [
     title: "Family Portraits",
     description: "Beautiful family sessions that capture the love and connection between your loved ones.",
     features: ["Outdoor locations", "All family sizes", "Print packages", "Quick turnaround"],
-    price: "From $299",
+    price: "From ₹299",
     popular: false
   },
   {
@@ -34,7 +34,7 @@ const services = [
     title: "Event Coverage",
     description: "Professional coverage for corporate events, parties, and special occasions.",
     features: ["Corporate events", "Birthday parties", "Milestone celebrations", "Same-day previews"],
-    price: "From $399",
+    price: "From ₹399",
     popular: false
   },
   {
@@ -50,7 +50,7 @@ const services = [
     title: "Special Sessions",
     description: "Unique photography experiences including maternity, newborn, and themed shoots.",
     features: ["Maternity sessions", "Newborn photography", "Themed shoots", "Seasonal specials"],
-    price: "From $249",
+    price: "From ₹249",
     popular: false
   }
 ];

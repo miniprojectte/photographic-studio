@@ -193,13 +193,13 @@ export default function DashboardGallery() {
             <h1 className="text-3xl font-bold text-white mb-2">My Gallery</h1>
             <p className="text-white/50">{photos.length} photos</p>
           </div>
-          <button
+          {/* <button
             onClick={() => setShowUpload(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#C45D3E] to-[#A04A2F] text-white font-medium rounded-xl hover:shadow-lg hover:shadow-[#C45D3E]/20 transition-all"
           >
             <Plus className="w-5 h-5" />
             Upload Photos
-          </button>
+          </button> */}
         </motion.div>
 
         {/* Upload Modal */}
@@ -328,14 +328,14 @@ export default function DashboardGallery() {
               <ImageIcon className="w-10 h-10 text-white/20" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No Photos Yet</h3>
-            <p className="text-white/50 mb-6">Upload your first photos to get started</p>
-            <button
+            {/* <p className="text-white/50 mb-6">Upload your first photos to get started</p> */}
+            {/* <button
               onClick={() => setShowUpload(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#C45D3E] to-[#A04A2F] text-white font-medium rounded-xl transition-all"
             >
               <Upload className="w-4 h-4" />
               Upload Photos
-            </button>
+            </button> */}
           </div>
         )}
 
